@@ -1,0 +1,44 @@
+﻿@model List<PetaPocoWebTest.Poco.Author>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Authors</h2>
+
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Create new author", "Create")
+</p>
+
+@if( Model.Count == 0){
+
+    <p>There are no authors yet</p>
+
+}else{
+
+    <table>
+        <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Id</th>
+        </tr>
+
+        @foreach (var author in Model) {
+        <tr>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new {authorId=author.Id}) |
+                @Html.ActionLink("Details", "Details", new {authorId=author.Id}) |
+                @Html.ActionLink("Delete", "Delete", new {authorId=author.Id})
+            </td>
+            <td>
+                @author.Name
+            </td>
+            <td>
+                @author.Id
+            </td>
+        </tr>
+        }
+
+    </table>
+}
+

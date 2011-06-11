@@ -1,0 +1,33 @@
+﻿@model PetaPocoWebTest.Poco.Article
+
+@{
+    ViewBag.Title = "Delete";
+}
+
+<h2>Delete article</h2>
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Back to list of articles", "Index")
+</p>
+<h3>Are you sure you want to delete this?</h3>
+<fieldset>
+    <legend>Article</legend>
+
+    <div class="display-label">Title</div>
+    <div class="display-field">@Model.Title</div>
+
+    <div class="display-label">Body</div>
+    <div class="display-field">@Model.Body</div>
+
+    <div class="display-label">Date</div>
+    <div class="display-field">@String.Format("{0:g}", Model.Date)</div>
+
+    <div class="display-label">AuthorId</div>
+    <div class="display-field">@Model.Author.Name</div>
+</fieldset>
+@using (Html.BeginForm()) {
+    <p>
+        <input type="submit" value="Delete" />
+    </p>
+}
+
+

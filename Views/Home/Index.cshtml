@@ -1,0 +1,16 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<h2>@ViewBag.Message</h2>
+
+<p>
+    A simple application to manage authors and their articles. Authors have a many-to-one relationship with articles.
+    Articles must have an author associated with them. If you delete an author wll his articles are also deleted.
+    Use <a href="~/glimpse/config">Glimpse</a> to track the SQL being sent to the database
+</p>
+
+<ul>
+    <li>@Html.ActionLink( "Articles", "Index", "Article")</li>
+    <li>@Html.ActionLink( "Authors", "Index", "Author")</li>
+</ul>

@@ -1,0 +1,39 @@
+﻿
+@{
+var websiteSectionName = (string)ViewData["WebsiteSectionName"] ?? ""; // This is null in controllers that don't set it up eg; the home controller
+var controllersRepresentedByTheHomeTab = new List<string> {"home"};
+}
+
+@{
+  Func<string, bool> ThisControllerBelongsToTheTabBeingRendered = (controllerName) =>
+  {
+    return( string.IsNullOrEmpty( websiteSectionName)
+            && controllersRepresentedByTheHomeTab.Contains( controllerName.ToLower())  // websiteSectionName is optionally defined in a controller's constructor
+        ||
+            (controllerName.ToLower() == (string)websiteSectionName));
+  };
+
+  Func<string, string, string, string> TabLink = (linkText, actionName, controllerName) => 
+  {
+    System.Text.StringBuilder li = new System.Text.StringBuilder();
+    
+    li.Append( "<li");
+
+    if( ThisControllerBelongsToTheTabBeingRendered( controllerName))
+    {
+        li.Append( " class='current'");
+    }
+    li.Append( ">");
+
+    li.Append( Html.ActionLink( linkText, actionName, controllerName).ToString());
+    li.Append( "</li>");
+
+    return li.ToString();
+  };
+}
+
+<ul id="menu">
+    @Html.Raw( TabLink( "Home", "Index", "Home"))
+    @Html.Raw( TabLink( "Articles", "Index", "Article"))
+    @Html.Raw( TabLink( "Authors", "Index", "Author"))
+</ul>

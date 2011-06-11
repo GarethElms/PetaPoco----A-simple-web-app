@@ -1,0 +1,27 @@
+﻿@model PetaPocoWebTest.Poco.Article
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<h2>Article details</h2>
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Edit", "Edit", new { articleId=Model.Id }) - @Html.ActionLink("Back to list of articles", "Index")
+</p>
+<fieldset>
+    <legend>Article</legend>
+
+    <div class="display-label">Title</div>
+    <div class="display-field">@Model.Title</div>
+
+    <div class="display-label">Body</div>
+    <div class="display-field">@Model.Body</div>
+
+    <div class="display-label">Date</div>
+    <div class="display-field">@String.Format("{0:g}", Model.Date)</div>
+
+    <div class="display-label">Author</div>
+    <div class="display-field">
+    @Html.ActionLink( Model.Author.Name, "Details", "Author", new {authorId=Model.Author.Id}, null)</div>
+</fieldset>
+

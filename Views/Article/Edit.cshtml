@@ -1,0 +1,60 @@
+﻿@model PetaPocoWebTest.ViewModels.ArticleEditViewModel
+
+@{
+    ViewBag.Title = "Edit";
+}
+
+<h2>Edit this article</h2>
+
+<script src="@Url.Content("~/Scripts/jquery.validate.min.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")" type="text/javascript"></script>
+
+@using (Html.BeginForm()) {
+    @Html.ValidationSummary(true)
+    <fieldset>
+        <legend>Article</legend>
+
+        @Html.HiddenFor(model => model.Article.Id)
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Article.Title)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.Article.Title)
+            @Html.ValidationMessageFor(model => model.Article.Title)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Article.Body)
+        </div>
+        <div class="editor-field">
+            @Html.TextAreaFor(model => model.Article.Body)
+            @Html.ValidationMessageFor(model => model.Article.Body)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Article.Date)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.Article.Date)
+            @Html.ValidationMessageFor(model => model.Article.Date)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Article.AuthorId)
+        </div>
+        <div class="editor-field">
+            @Html.DropDownListFor( model => model.Article.AuthorId, new SelectList( Model.Authors, "Id", "Name", Model.Article.AuthorId))
+            @Html.ValidationMessageFor(model => model.Article.AuthorId)
+        </div>
+
+        <p>
+            <input type="submit" value="Save" />
+        </p>
+    </fieldset>
+}
+
+<div>
+    @Html.ActionLink("Back to list of articles", "Index")
+</div>
+

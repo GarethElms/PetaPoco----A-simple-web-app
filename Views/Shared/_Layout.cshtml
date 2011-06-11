@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewBag.Title</title>
+    <link href="@Url.Content("~/Content/Site.css")" rel="stylesheet" type="text/css" />
+    <script src="@Url.Content("~/Scripts/jquery-1.4.4.min.js")" type="text/javascript"></script>
+    <script src="@Url.Content("~/Scripts/jquery-ui.js")" type="text/javascript"></script>
+    <link href="@Url.Content("~/Content/themes/base/jquery-ui.css")" rel="stylesheet" type="text/css" />
+    <script type="text/javascript"">
+    $(document).ready(function () {
+    @RenderSection( name:"onReadyJavascript", required:false)
+    });
+    </script>
+</head>
+
+<body>
+    <div class="page">
+
+        <div id="header">
+            
+            <h1>PetaPoco - A basic web app</h1>
+
+            <div id="menucontainer">
+                @{Html.RenderPartial( "WebsitePrimaryTabs");}
+            </div>
+        </div>
+
+        <div id="main">
+            @if( ViewBag.ErrorMessage != null){
+                <p class="error">@ViewBag.ErrorMessage</p>
+            }
+
+            @RenderBody()
+            <div id="footer">
+                
+                <p style="float:left;">
+                    <em>v1.0 PetaPoco - A basic web app by <a href="http://www.garethelms.org">Gareth Elms</a> 2011 - demonstrating the marvellous <a href="http://www.toptensoftware.com/petapoco/">PetaPoco micro orm by TopTen Software</a></em>
+                </p>
+                <p style="float:right;" title="This app uses Glimpse for server debugging within the browser. Look in the PetaPoco tab in Glimpse">
+                    Glimpse : 
+                    <a href="javascript:(function(){document.cookie='glimpseState=; path=/; expires=Sat, 01 Jan 2050 12:00:00 GMT;'; window.location.reload();})();">Off</a>
+                    <a href="javascript:(function(){document.cookie='glimpseState=On; path=/; expires=Sat, 01 Jan 2050 12:00:00 GMT;'; window.location.reload();})();">On</a>
+                </p>
+
+                <br style="clear:both;" />
+            </div>
+        </div>
+    </div>
+</body>
+</html>

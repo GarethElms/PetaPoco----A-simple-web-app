@@ -1,0 +1,55 @@
+﻿@model PetaPocoWebTest.ViewModels.ArticlesViewModel
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Articles</h2>
+
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Create new article", "Create")
+</p>
+
+@if( Model.Articles.Count == 0){
+
+    <p>There are no articles yet</p>
+
+}else{
+
+    <table id="example">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Date</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach( var article in Model.Articles) {
+            <tr>
+                <td>
+                    @Html.ActionLink("Edit", "Edit", new {articleId=article.Id}) |
+                    @Html.ActionLink("Details", "Details", new {articleId=article.Id}) |
+                    @Html.ActionLink("Delete", "Delete", new {articleId=article.Id})
+                </td>
+                <td>
+                    @article.Title
+                </td>
+                <td>
+                    @article.Author.Name
+                </td>
+                <td>
+                    @article.Date.ToShortDateString() @article.Date.ToShortTimeString()
+                </td>
+                <td>
+                    @article.Id
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+}
+

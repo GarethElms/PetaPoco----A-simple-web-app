@@ -1,0 +1,21 @@
+﻿@model PetaPocoWebTest.Poco.Author
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<h2>Author details</h2>
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Edit", "Edit", new { authorId=Model.Id }) - @Html.ActionLink("Back to list of authors", "Index")
+</p>
+<fieldset>
+    <legend>Author</legend>
+
+    <div class="display-label">Name</div>
+    <div class="display-field">@Model.Name</div>
+</fieldset>
+
+@{Html.RenderPartial( "ListArticlesByAuthor", Model.Articles, new ViewDataDictionary() { {"AuthorName", Model.Name}});}
+
+    
+

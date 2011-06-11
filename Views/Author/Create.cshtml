@@ -1,0 +1,35 @@
+﻿@model PetaPocoWebTest.Poco.Author
+
+@{
+    ViewBag.Title = "Create";
+}
+
+<h2>Create new author</h2>
+
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Back to list of authors", "Index")
+</p>
+
+<script src="@Url.Content("~/Scripts/jquery.validate.min.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")" type="text/javascript"></script>
+
+@using (Html.BeginForm()) {
+    @Html.ValidationSummary(true)
+
+    <fieldset>
+        <legend>Author</legend>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Name)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.Name)
+            @Html.ValidationMessageFor(model => model.Name)
+        </div>
+
+        <p>
+            <input type="submit" value="Create" />
+        </p>
+    </fieldset>
+}
+
