@@ -10,7 +10,7 @@ namespace PetaPocoWebTest.Poco
 {
 	public class Article
 	{
-		public int? Id {get; set;}
+		public int Id {get; set;}
 		public string Title {get; set;}
 		public string Body {get; set;}
 
@@ -27,6 +27,7 @@ namespace PetaPocoWebTest.Poco
 		public Article()
 		{
 			Date = DateTime.Now;
+			Id = int.MinValue;
 		}
 	}
 }
