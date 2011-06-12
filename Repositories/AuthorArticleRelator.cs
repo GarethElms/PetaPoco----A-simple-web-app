@@ -38,7 +38,6 @@ namespace PetaPocoWebTest.Repositories
 			_currentAuthor = author;
 			_currentAuthor.Articles = new List<Article>();
 
-			//if( article.Id != null)
 			if( article.Id != int.MinValue)
 			{
 				// Only add this article if the details aren't null
