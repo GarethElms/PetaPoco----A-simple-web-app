@@ -31,32 +31,6 @@ namespace PetaPocoWebTest.Controllers
 			_authors = new AuthorRepository( _database);
 
 			HttpContext.Items[DatabaseWithProfiling.PetaKey] = TempData[DatabaseWithProfiling.PetaKey];
-
-			/*
-			if( filterContext.HttpContext.Session[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey] != null)
-			{
-				var petaPocoGlimpseFromPreviousRequest = ((List<DatabaseWithProfiling.PetaPocoSqlInfo>)filterContext.HttpContext.Session[DatabaseWithProfiling.PetaKey]);
-
-				foreach( var petaPocoGlimpse in petaPocoGlimpseFromPreviousRequest)
-				{
-					DatabaseWithProfiling.CurrentRequestInfo.InsertRange( 0, petaPocoGlimpseFromPreviousRequest);
-				}
-
-				filterContext.HttpContext.Session[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey] = null;
-			}
-			 * */
-		}
-
-		protected override void OnActionExecuted(ActionExecutedContext filterContext)
-		{
-			base.OnActionExecuted(filterContext);
-
-			/*
-			if( filterContext.HttpContext.Items[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey] != null)
-			{
-				filterContext.HttpContext.Session[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey]
-					= filterContext.HttpContext.Items[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey];
-			}*/
 		}
 
 		protected void ThisControllerLivesInWebsiteSection( string sectionName)

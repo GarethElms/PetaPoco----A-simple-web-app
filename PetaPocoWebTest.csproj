@@ -75,15 +75,14 @@
     <Compile Include="Database\DatabaseExtensions.cs" />
     <Compile Include="Database\DatabaseWithProfiling.cs" />
     <Compile Include="Database\PetaPocoGlimpsePlugin.cs" />
-    <Compile Include="Poco\Article.cs" />
-    <Compile Include="Poco\Author.cs" />
+    <Compile Include="Models\Article.cs" />
+    <Compile Include="Models\Author.cs" />
     <Compile Include="Repositories\ArticleRepository.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\AuthorController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Models\AccountModels.cs" />
     <Compile Include="Database\PetaPoco.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\AuthorArticleRelator.cs" />

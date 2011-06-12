@@ -13,13 +13,6 @@ namespace PetaPoco.Profiling
     {
         public object GetData(HttpApplication application)
         {
-			/*if( application.Session[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey] != null)
-			{
-				var listFromPreviousRequest = (List<PetaPocoWebTest.Database.DatabaseWithProfiling.PetaPocoSqlInfo>)application.Session[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey];
-				var listFromCurrentRequest = (List<PetaPocoWebTest.Database.DatabaseWithProfiling.PetaPocoSqlInfo>)application.Context.Items[DatabaseWithProfiling.PetaKey];
-				listFromPreviousRequest.AddRange( listFromCurrentRequest);
-			}*/
-
             if (application.Context.Items[DatabaseWithProfiling.PetaKey] == null)
                 return new List<object[]> { new[] { "Log" }, new[] { "No database requests or database logging not switched on (Compilation debug='true' or ForceLogging='true' on PetaPoco.DatabaseWithLogging)", "warn" } };
 
