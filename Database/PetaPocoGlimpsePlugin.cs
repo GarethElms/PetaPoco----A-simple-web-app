@@ -13,13 +13,13 @@ namespace PetaPoco.Profiling
     {
         public object GetData(HttpApplication application)
         {
-            if (application.Context.Items[DatabaseWithProfiling.PetaKey] == null)
+            if (application.Context.Items[DatabaseWithGlimpseProfiling.PetaKey] == null)
                 return new List<object[]> { new[] { "Log" }, new[] { "No database requests or database logging not switched on (Compilation debug='true' or ForceLogging='true' on PetaPoco.DatabaseWithLogging)", "warn" } };
 
             var sqls = new List<object[]> {new[] {"#", "Time(ms)", "Sql", "Parameters"}};
 
             var i = 1;
-            foreach (var item in DatabaseWithProfiling.CurrentRequestInfo)
+            foreach (var item in DatabaseWithGlimpseProfiling.CurrentRequestInfo)
             {
                 var parameterHeadings = new List<object[]> {new[] {"Name", "Type", "Value"}};
                 parameterHeadings.AddRange(item.Parameters.Cast<IDataParameter>().Select(pm => new[] { pm.ParameterName, pm.Value.GetType().Name, pm.Value }));
@@ -32,7 +32,7 @@ namespace PetaPoco.Profiling
                 sqls.Add(new[] { i++, time, item.Sql, parameters });
             }
 
-			HttpContext.Current.Items[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey] = null; //ELMS: Clear it out
+			HttpContext.Current.Items[PetaPocoWebTest.Database.DatabaseWithGlimpseProfiling.PetaKey] = null; //ELMS: Clear it out
 
             return sqls;
         }

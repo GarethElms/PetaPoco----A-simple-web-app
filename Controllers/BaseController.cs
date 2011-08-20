@@ -10,13 +10,13 @@ namespace PetaPocoWebTest.Controllers
 {
     public class BaseController : Controller
     {
-		protected DatabaseWithProfiling _database;
+		protected DatabaseWithMVCMiniProfilerAndGlimpse _database;
 		protected ArticleRepository _articles;
 		protected AuthorRepository _authors;
 
 		protected override RedirectToRouteResult RedirectToAction(string actionName, string controllerName, System.Web.Routing.RouteValueDictionary routeValues)
 		{
-			DatabaseWithProfiling.PersistGlimpseAfterRedirect( TempData);
+			DatabaseWithGlimpseProfiling.PersistGlimpseAfterRedirect( TempData);
 			return base.RedirectToAction(actionName, controllerName, routeValues);
 		}
 
@@ -24,13 +24,13 @@ namespace PetaPocoWebTest.Controllers
 		{
 			base.OnActionExecuting( filterContext);
 
-			_database = new DatabaseWithProfiling( "PetaPocoWebTest");
+			_database = new DatabaseWithMVCMiniProfilerAndGlimpse( "PetaPocoWebTest");
 			_database.EnsureDatabase();
 
 			_articles = new ArticleRepository( _database);
 			_authors = new AuthorRepository( _database);
 
-			HttpContext.Items[DatabaseWithProfiling.PetaKey] = TempData[DatabaseWithProfiling.PetaKey];
+			HttpContext.Items[DatabaseWithGlimpseProfiling.PetaKey] = TempData[DatabaseWithGlimpseProfiling.PetaKey];
 		}
 
 		protected void ThisControllerLivesInWebsiteSection( string sectionName)

@@ -1,4 +1,4 @@
-﻿/* PetaPoco v4.0.2 - A Tiny ORMish thing for your POCO's.
+﻿/* PetaPoco v4.0.3 - A Tiny ORMish thing for your POCO's.
  * Copyright © 2011 Topten Software.  All Rights Reserved.
  * 
  * Apache License 2.0 - http://www.toptensoftware.com/petapoco/license
@@ -115,13 +115,19 @@ namespace PetaPoco
 		public string SequenceName { get; set; }
 	}
 
-	// Optionally provide and implementation of this to Database.Mapper
+	// Optionally provide an implementation of this to Database.Mapper
 	public interface IMapper
 	{
 		void GetTableInfo(Type t, TableInfo ti);
 		bool MapPropertyToColumn(PropertyInfo pi, ref string columnName, ref bool resultColumn);
 		Func<object, object> GetFromDbConverter(PropertyInfo pi, Type SourceType);
 		Func<object, object> GetToDbConverter(Type SourceType);
+	}
+
+	// This will be merged with IMapper in the next major version
+	public interface IMapper2 : IMapper
+	{
+		Func<object, object> GetFromDbConverter(Type DestType, Type SourceType);
 	}
 
 	// Database class ... this is where most of the action happens
@@ -228,6 +234,8 @@ namespace PetaPoco
 				_sharedConnection.ConnectionString = _connectionString;
 				_sharedConnection.Open();
 
+				_sharedConnection = OnConnectionOpened(_sharedConnection);
+
 				if (KeepConnectionAlive)
 					_sharedConnectionDepth++;		// Make sure you call Dispose
 			}
@@ -242,6 +250,7 @@ namespace PetaPoco
 				_sharedConnectionDepth--;
 				if (_sharedConnectionDepth == 0)
 				{
+					OnConnectionClosing(_sharedConnection);
 					_sharedConnection.Dispose();
 					_sharedConnection = null;
 				}
@@ -465,7 +474,7 @@ namespace PetaPoco
 			sql = sql.Replace("@@", "@");		   // <- double @@ escapes a single @
 
 			// Create the command and add parameters
-			IDbCommand cmd = _factory == null ? connection.CreateCommand() : _factory.CreateCommand();
+			IDbCommand cmd = connection.CreateCommand();
 			cmd.Connection = connection;
 			cmd.CommandText = sql;
 			cmd.Transaction = _transaction;
@@ -493,6 +502,8 @@ namespace PetaPoco
 		}
 
 		// Override this to log commands, or modify command before execution
+		public virtual IDbConnection OnConnectionOpened(IDbConnection conn) { return conn; }
+		public virtual void OnConnectionClosing(IDbConnection conn) { }
 		public virtual void OnExecutingCommand(IDbCommand cmd) { }
 		public virtual void OnExecutedCommand(IDbCommand cmd) { }
 
@@ -597,6 +608,7 @@ namespace PetaPoco
 
 		static Regex rxColumns = new Regex(@"\A\s*SELECT\s+((?:\((?>\((?<depth>)|\)(?<-depth>)|.?)*(?(depth)(?!))\)|.)*?)(?<!,\s+)\bFROM\b", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.Compiled);
 		static Regex rxOrderBy = new Regex(@"\bORDER\s+BY\s+(?:\((?>\((?<depth>)|\)(?<-depth>)|.?)*(?(depth)(?!))\)|[\w\(\)\.])+(?:\s+(?:ASC|DESC))?(?:\s*,\s*(?:\((?>\((?<depth>)|\)(?<-depth>)|.?)*(?(depth)(?!))\)|[\w\(\)\.])+(?:\s+(?:ASC|DESC))?)*", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.Compiled);
+		static Regex rxDistinct = new Regex(@"\ADISTINCT\s", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.Compiled);
 		public static bool SplitSqlForPaging(string sql, out string sqlCount, out string sqlSelectRemoved, out string sqlOrderBy)
 		{
 			sqlSelectRemoved = null;
@@ -610,22 +622,31 @@ namespace PetaPoco
 
 			// Save column list and replace with COUNT(*)
 			Group g = m.Groups[1];
-			sqlCount = sql.Substring(0, g.Index) + "COUNT(*) " + sql.Substring(g.Index + g.Length);
 			sqlSelectRemoved = sql.Substring(g.Index);
+
+			if (rxDistinct.IsMatch(sqlSelectRemoved))
+				sqlCount = sql.Substring(0, g.Index) + "COUNT(" + m.Groups[1].ToString().Trim() + ") " + sql.Substring(g.Index + g.Length);
+			else
+				sqlCount = sql.Substring(0, g.Index) + "COUNT(*) " + sql.Substring(g.Index + g.Length);
+
 
 			// Look for an "ORDER BY <whatever>" clause
 			m = rxOrderBy.Match(sqlCount);
 			if (!m.Success)
-				return false;
-
-			g = m.Groups[0];
-			sqlOrderBy = g.ToString();
-			sqlCount = sqlCount.Substring(0, g.Index) + sqlCount.Substring(g.Index + g.Length);
+			{
+				sqlOrderBy = null;
+			}
+			else
+			{
+				g = m.Groups[0];
+				sqlOrderBy = g.ToString();
+				sqlCount = sqlCount.Substring(0, g.Index) + sqlCount.Substring(g.Index + g.Length);
+			}
 
 			return true;
 		}
 
-		public void BuildPageQueries<T>(long page, long itemsPerPage, string sql, ref object[] args, out string sqlCount, out string sqlPage) 
+		public void BuildPageQueries<T>(long skip, long take, string sql, ref object[] args, out string sqlCount, out string sqlPage) 
 		{
 			// Add auto select clause
 			if (EnableAutoSelect)
@@ -642,19 +663,23 @@ namespace PetaPoco
 			if (_dbType == DBType.SqlServer || _dbType == DBType.Oracle)
 			{
 				sqlSelectRemoved = rxOrderBy.Replace(sqlSelectRemoved, "");
+				if (rxDistinct.IsMatch(sqlSelectRemoved))
+				{
+					sqlSelectRemoved = "peta_inner.* FROM (SELECT " + sqlSelectRemoved + ") peta_inner";
+				}
 				sqlPage = string.Format("SELECT * FROM (SELECT ROW_NUMBER() OVER ({0}) peta_rn, {1}) peta_paged WHERE peta_rn>@{2} AND peta_rn<=@{3}",
-										sqlOrderBy, sqlSelectRemoved, args.Length, args.Length + 1);
-				args = args.Concat(new object[] { (page - 1) * itemsPerPage, page * itemsPerPage }).ToArray();
+										sqlOrderBy==null ? "ORDER BY (SELECT NULL)" : sqlOrderBy, sqlSelectRemoved, args.Length, args.Length + 1);
+				args = args.Concat(new object[] { skip, skip+take }).ToArray();
 			}
 			else if (_dbType == DBType.SqlServerCE)
 			{
 				sqlPage = string.Format("{0}\nOFFSET @{1} ROWS FETCH NEXT @{2} ROWS ONLY", sql, args.Length, args.Length + 1);
-				args = args.Concat(new object[] { (page - 1) * itemsPerPage, itemsPerPage }).ToArray();
+				args = args.Concat(new object[] { skip, take }).ToArray();
 			}
 			else
 			{
 				sqlPage = string.Format("{0}\nLIMIT @{1} OFFSET @{2}", sql, args.Length, args.Length + 1);
-				args = args.Concat(new object[] { itemsPerPage, (page - 1) * itemsPerPage }).ToArray();
+				args = args.Concat(new object[] { take, skip }).ToArray();
 			}
 
 		}
@@ -663,7 +688,7 @@ namespace PetaPoco
 		public Page<T> Page<T>(long page, long itemsPerPage, string sql, params object[] args) 
 		{
 			string sqlCount, sqlPage;
-			BuildPageQueries<T>(page, itemsPerPage, sql, ref args, out sqlCount, out sqlPage);
+			BuildPageQueries<T>((page-1)*itemsPerPage, itemsPerPage, sql, ref args, out sqlCount, out sqlPage);
 
 			// Save the one-time command time out and use it for both queries
 			int saveTimeout = OneTimeCommandTimeout;
@@ -692,16 +717,26 @@ namespace PetaPoco
 		}
 
 
-		public List<T> Fetch<T>(long page, long itemsPerPage, string sql, params object[] args) 
+		public List<T> Fetch<T>(long page, long itemsPerPage, string sql, params object[] args)
+		{
+			return SkipTake<T>((page - 1) * itemsPerPage, itemsPerPage, sql, args);
+		}
+
+		public List<T> Fetch<T>(long page, long itemsPerPage, Sql sql)
+		{
+			return SkipTake<T>((page - 1) * itemsPerPage, itemsPerPage, sql.SQL, sql.Arguments);
+		}
+
+		public List<T> SkipTake<T>(long skip, long take, string sql, params object[] args)
 		{
 			string sqlCount, sqlPage;
-			BuildPageQueries<T>(page, itemsPerPage, sql, ref args, out sqlCount, out sqlPage);
+			BuildPageQueries<T>(skip, take, sql, ref args, out sqlCount, out sqlPage);
 			return Fetch<T>(sqlPage, args);
 		}
 
-		public List<T> Fetch<T>(long page, long itemsPerPage, Sql sql) 
+		public List<T> SkipTake<T>(long skip, long take, Sql sql)
 		{
-			return Fetch<T>(page, itemsPerPage, sql.SQL, sql.Arguments);
+			return SkipTake<T>(skip, take, sql.SQL, sql.Arguments);
 		}
 
 		// Return an enumerable collection of pocos
@@ -1116,7 +1151,7 @@ namespace PetaPoco
 
 		public string EscapeTableName(string str)
 		{
-			// Assume table names with "dot", or opening sq is already escaped
+			// Assume table names with "dot" are already escaped
 			return str.IndexOf('.') >= 0 ? str : EscapeSqlIdentifier(str);
 		}
 		public string EscapeSqlIdentifier(string str)
@@ -1127,8 +1162,10 @@ namespace PetaPoco
 					return string.Format("`{0}`", str);
 
 				case DBType.PostgreSQL:
-				case DBType.Oracle:
 					return string.Format("\"{0}\"", str);
+
+				case DBType.Oracle:
+					return string.Format("\"{0}\"", str.ToUpperInvariant());
 
 				default:
 					return string.Format("[{0}]", str);
@@ -1301,8 +1338,14 @@ namespace PetaPoco
 			return Insert(pd.TableInfo.TableName, pd.TableInfo.PrimaryKey, pd.TableInfo.AutoIncrement, poco);
 		}
 
-		// Update a record with values from a poco.  primary key value can be either supplied or read from the poco
 		public int Update(string tableName, string primaryKeyName, object poco, object primaryKeyValue)
+		{
+			return Update(tableName, primaryKeyName, poco, primaryKeyValue, null);
+		}
+
+
+		// Update a record with values from a poco.  primary key value can be either supplied or read from the poco
+		public int Update(string tableName, string primaryKeyName, object poco, object primaryKeyValue, IEnumerable<string> columns)
 		{
 			try
 			{
@@ -1314,27 +1357,53 @@ namespace PetaPoco
 						var sb = new StringBuilder();
 						var index = 0;
 						var pd = PocoData.ForObject(poco,primaryKeyName);
-						foreach (var i in pd.Columns)
+						if (columns == null)
 						{
-							// Don't update the primary key, but grab the value if we don't have it
-							if (string.Compare(i.Key, primaryKeyName, true)==0)
+							foreach (var i in pd.Columns)
 							{
-								if (primaryKeyValue == null)
-									primaryKeyValue = i.Value.GetValue(poco);
-								continue;
+								// Don't update the primary key, but grab the value if we don't have it
+								if (string.Compare(i.Key, primaryKeyName, true) == 0)
+								{
+									if (primaryKeyValue == null)
+										primaryKeyValue = i.Value.GetValue(poco);
+									continue;
+								}
+
+								// Dont update result only columns
+								if (i.Value.ResultColumn)
+									continue;
+
+								// Build the sql
+								if (index > 0)
+									sb.Append(", ");
+								sb.AppendFormat("{0} = {1}{2}", EscapeSqlIdentifier(i.Key), _paramPrefix, index++);
+
+								// Store the parameter in the command
+								AddParam(cmd, i.Value.GetValue(poco), _paramPrefix);
+							}
+						}
+						else
+						{
+							foreach (var colname in columns)
+							{
+								var pc = pd.Columns[colname];
+
+								// Build the sql
+								if (index > 0)
+									sb.Append(", ");
+								sb.AppendFormat("{0} = {1}{2}", EscapeSqlIdentifier(colname), _paramPrefix, index++);
+
+								// Store the parameter in the command
+								AddParam(cmd, pc.GetValue(poco), _paramPrefix);
 							}
 
-							// Dont update result only columns
-							if (i.Value.ResultColumn)
-								continue;
+							// Grab primary key value
+							if (primaryKeyValue == null)
+							{
+								var pc = pd.Columns[primaryKeyName];
+								primaryKeyValue = pc.GetValue(poco);
+							}
 
-							// Build the sql
-							if (index > 0)
-								sb.Append(", ");
-							sb.AppendFormat("{0} = {1}{2}", EscapeSqlIdentifier(i.Key), _paramPrefix, index++);
-
-							// Store the parameter in the command
-							AddParam(cmd, i.Value.GetValue(poco), _paramPrefix);
 						}
 
 						cmd.CommandText = string.Format("UPDATE {0} SET {1} WHERE {2} = {3}{4}",
@@ -1366,15 +1435,29 @@ namespace PetaPoco
 			return Update(tableName, primaryKeyName, poco, null);
 		}
 
+		public int Update(string tableName, string primaryKeyName, object poco, IEnumerable<string> columns)
+		{
+			return Update(tableName, primaryKeyName, poco, null, columns);
+		}
+
+		public int Update(object poco, IEnumerable<string> columns)
+		{
+			return Update(poco, null, columns);
+		}
+
 		public int Update(object poco)
 		{
-			return Update(poco, null);
+			return Update(poco, null, null);
 		}
 
 		public int Update(object poco, object primaryKeyValue)
 		{
+			return Update(poco, primaryKeyValue, null);
+		}
+		public int Update(object poco, object primaryKeyValue, IEnumerable<string> columns)
+		{
 			var pd = PocoData.ForType(poco.GetType());
-			return Update(pd.TableInfo.TableName, pd.TableInfo.PrimaryKey, poco, primaryKeyValue);
+			return Update(pd.TableInfo.TableName, pd.TableInfo.PrimaryKey, poco, primaryKeyValue, columns);
 		}
 
 		public int Update<T>(string sql, params object[] args)
@@ -1576,7 +1659,7 @@ namespace PetaPoco
 			set;
 		}
 
-		internal class PocoColumn
+		public class PocoColumn
 		{
 			public string ColumnName;
 			public PropertyInfo PropertyInfo;
@@ -1585,7 +1668,7 @@ namespace PetaPoco
 			public virtual object GetValue(object target) { return PropertyInfo.GetValue(target, null); }
 			public virtual object ChangeType(object val) { return Convert.ChangeType(val, PropertyInfo.PropertyType); }
 		}
-		internal class ExpandoColumn : PocoColumn
+		public class ExpandoColumn : PocoColumn
 		{
 			public override void SetValue(object target, object val) { (target as IDictionary<string, object>)[ColumnName]=val; }
 			public override object GetValue(object target) 
@@ -1596,7 +1679,7 @@ namespace PetaPoco
 			}
 			public override object ChangeType(object val) { return val; }
 		}
-		internal class PocoData
+		public class PocoData
 		{
 			public static PocoData ForObject(object o, string primaryKeyName)
 			{
@@ -1731,9 +1814,9 @@ namespace PetaPoco
 
 			}
 
-			bool IsIntegralType(Type t)
+			static bool IsIntegralType(Type t)
 			{
-				var tc=Type.GetTypeCode(t);
+				var tc = Type.GetTypeCode(t);
 				return tc >= TypeCode.SByte && tc <= TypeCode.UInt64;
 			}
 
@@ -1760,11 +1843,12 @@ namespace PetaPoco
 
 				try
 				{
+
 					// Check again, just in case
 					Delegate factory;
 					if (PocoFactories.TryGetValue(key, out factory))
 						return factory;
-					
+
 					// Create the method
 					var m = new DynamicMethod("petapoco_factory_" + PocoFactories.Count.ToString(), type, new Type[] { typeof(IDataReader) }, true);
 					var il = m.GetILGenerator();
@@ -1793,19 +1877,7 @@ namespace PetaPoco
 								converter = delegate(object src) { return new DateTime(((DateTime)src).Ticks, DateTimeKind.Utc); };
 
 							// Setup stack for call to converter
-							int converterIndex = -1;
-							if (converter != null)
-							{
-								// Add the converter
-								converterIndex = m_Converters.Count;
-								m_Converters.Add(converter);
-
-								// Generate IL to push the converter onto the stack
-								il.Emit(OpCodes.Ldsfld, fldConverters);
-								il.Emit(OpCodes.Ldc_I4, converterIndex);
-								il.Emit(OpCodes.Callvirt, fnListGetItem);					// obj, obj, fieldname, Converter
-							}
-
+							AddConverterToStack(il, converter);
 
 							// r[i]
 							il.Emit(OpCodes.Ldarg_0);					// obj, obj, fieldname, converter?,    rdr
@@ -1839,15 +1911,12 @@ namespace PetaPoco
 					}
 					else
 #endif
-						if (type.IsValueType)
+						if (type.IsValueType || type == typeof(string) || type == typeof(byte[]))
 						{
-							il.Emit(OpCodes.Ldarg_0);										// rdr
-							il.Emit(OpCodes.Ldc_I4_0);										// rdr,0
-							il.Emit(OpCodes.Callvirt, fnGetValue);							// value
-							il.Emit(OpCodes.Unbox_Any, type);								// value converted
-						}
-						else if (type == typeof(string) || type == typeof(byte[]))
-						{
+							// Do we need to install a converter?
+							var srcType = r.GetFieldType(0);
+							var converter = GetConverter(ForceDateTimesToUtc, null, srcType, type);
+
 							// "if (!rdr.IsDBNull(i))"
 							il.Emit(OpCodes.Ldarg_0);										// rdr
 							il.Emit(OpCodes.Ldc_I4_0);										// rdr,0
@@ -1859,13 +1928,20 @@ namespace PetaPoco
 							il.Emit(OpCodes.Br_S, lblFin);
 
 							il.MarkLabel(lblCont);
+
+							// Setup stack for call to converter
+							AddConverterToStack(il, converter);
+
 							il.Emit(OpCodes.Ldarg_0);										// rdr
 							il.Emit(OpCodes.Ldc_I4_0);										// rdr,0
 							il.Emit(OpCodes.Callvirt, fnGetValue);							// value
 
-							il.Emit(OpCodes.Unbox_Any, type);								// value converted
+							// Call the converter
+							if (converter != null)
+								il.Emit(OpCodes.Callvirt, fnInvoke);
 
 							il.MarkLabel(lblFin);
+							il.Emit(OpCodes.Unbox_Any, type);								// value converted
 						}
 						else
 						{
@@ -1894,35 +1970,7 @@ namespace PetaPoco
 								il.Emit(OpCodes.Dup);											// poco,poco
 
 								// Do we need to install a converter?
-								Func<object, object> converter = null;
-
-								// Get converter from the mapper
-								if (Database.Mapper != null)
-								{
-									converter = Database.Mapper.GetFromDbConverter(pc.PropertyInfo, srcType);
-								}
-
-								// Standard DateTime->Utc mapper
-								if (ForceDateTimesToUtc && converter == null && srcType == typeof(DateTime) && (dstType == typeof(DateTime) || dstType == typeof(DateTime?)))
-								{
-									converter = delegate(object src) { return new DateTime(((DateTime)src).Ticks, DateTimeKind.Utc); };
-								}
-
-								// Forced type conversion including integral types -> enum
-								if (converter == null)
-								{
-									if (dstType.IsEnum && IsIntegralType(srcType))
-									{
-										if (srcType != typeof(int))
-										{
-											converter = delegate(object src) { return Convert.ChangeType(src, typeof(int), null); };
-										}
-									}
-									else if (!dstType.IsAssignableFrom(srcType))
-									{
-										converter = delegate(object src) { return Convert.ChangeType(src, dstType, null); };
-									}
-								}
+								var converter = GetConverter(ForceDateTimesToUtc, pc, srcType, dstType);
 
 								// Fast
 								bool Handled = false;
@@ -1952,18 +2000,7 @@ namespace PetaPoco
 								if (!Handled)
 								{
 									// Setup stack for call to converter
-									int converterIndex = -1;
-									if (converter != null)
-									{
-										// Add the converter
-										converterIndex = m_Converters.Count;
-										m_Converters.Add(converter);
-
-										// Generate IL to push the converter onto the stack
-										il.Emit(OpCodes.Ldsfld, fldConverters);
-										il.Emit(OpCodes.Ldc_I4, converterIndex);
-										il.Emit(OpCodes.Callvirt, fnListGetItem);					// Converter
-									}
+									AddConverterToStack(il, converter);
 
 									// "value = rdr.GetValue(i)"
 									il.Emit(OpCodes.Ldarg_0);										// *,rdr
@@ -1981,6 +2018,13 @@ namespace PetaPoco
 
 								il.MarkLabel(lblNext);
 							}
+
+							var fnOnLoaded = RecurseInheritedTypes<MethodInfo>(type, (x) => x.GetMethod("OnLoaded", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[0], null));
+							if (fnOnLoaded != null)
+							{
+								il.Emit(OpCodes.Dup);
+								il.Emit(OpCodes.Callvirt, fnOnLoaded);
+							}
 						}
 
 					il.Emit(OpCodes.Ret);
@@ -1994,6 +2038,79 @@ namespace PetaPoco
 				{
 					RWLock.ExitWriteLock();
 				}
+			}
+
+			private static void AddConverterToStack(ILGenerator il, Func<object, object> converter)
+			{
+				if (converter != null)
+				{
+					// Add the converter
+					int converterIndex = m_Converters.Count;
+					m_Converters.Add(converter);
+
+					// Generate IL to push the converter onto the stack
+					il.Emit(OpCodes.Ldsfld, fldConverters);
+					il.Emit(OpCodes.Ldc_I4, converterIndex);
+					il.Emit(OpCodes.Callvirt, fnListGetItem);					// Converter
+				}
+			}
+
+			private static Func<object, object> GetConverter(bool forceDateTimesToUtc, PocoColumn pc, Type srcType, Type dstType)
+			{
+				Func<object, object> converter = null;
+
+				// Get converter from the mapper
+				if (Database.Mapper != null)
+				{
+					if (pc != null)
+					{
+						converter = Database.Mapper.GetFromDbConverter(pc.PropertyInfo, srcType);
+					}
+					else
+					{
+						var m2 = Database.Mapper as IMapper2;
+						if (m2 != null)
+						{
+							converter = m2.GetFromDbConverter(dstType, srcType);
+						}
+					}
+				}
+
+				// Standard DateTime->Utc mapper
+				if (forceDateTimesToUtc && converter == null && srcType == typeof(DateTime) && (dstType == typeof(DateTime) || dstType == typeof(DateTime?)))
+				{
+					converter = delegate(object src) { return new DateTime(((DateTime)src).Ticks, DateTimeKind.Utc); };
+				}
+
+				// Forced type conversion including integral types -> enum
+				if (converter == null)
+				{
+					if (dstType.IsEnum && IsIntegralType(srcType))
+					{
+						if (srcType != typeof(int))
+						{
+							converter = delegate(object src) { return Convert.ChangeType(src, typeof(int), null); };
+						}
+					}
+					else if (!dstType.IsAssignableFrom(srcType))
+					{
+						converter = delegate(object src) { return Convert.ChangeType(src, dstType, null); };
+					}
+				}
+				return converter;
+			}
+
+
+			static T RecurseInheritedTypes<T>(Type t, Func<Type, T> cb)
+			{
+				while (t != null)
+				{
+					T info = cb(t);
+					if (info != null)
+						return info;
+					t = t.BaseType;
+				}
+				return default(T);
 			}
 
 
@@ -2035,7 +2152,7 @@ namespace PetaPoco
 			_db.BeginTransaction();
 		}
 
-		public void Complete()
+		public virtual void Complete()
 		{
 			_db.CompleteTransaction();
 			_db = null;

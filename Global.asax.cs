@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
+using MvcMiniProfiler;
 
 namespace PetaPocoWebTest
 {
@@ -12,14 +13,14 @@ namespace PetaPocoWebTest
 
 	public class MvcApplication : System.Web.HttpApplication
 	{
-		public static void RegisterGlobalFilters(GlobalFilterCollection filters)
+		public static void RegisterGlobalFilters( GlobalFilterCollection filters)
 		{
-			filters.Add(new HandleErrorAttribute());
+			filters.Add( new HandleErrorAttribute());
 		}
 
 		public static void RegisterRoutes(RouteCollection routes)
 		{
-			routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+			routes.IgnoreRoute( "{resource}.axd/{*pathInfo}");
 
 			routes.MapRoute(
 				"Author", // Route name
@@ -41,23 +42,25 @@ namespace PetaPocoWebTest
 
 		}
 
-		protected void Application_EndRequest()
-		{
-			//Session[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey] = PetaPocoWebTest.Database.DatabaseWithProfiling.CurrentRequestInfo;
-		}
-
 		protected void Application_BeginRequest()
 		{
-			//PetaPocoWebTest.Database.DatabaseWithProfiling.CurrentRequestInfo.Add(
-				//(PetaPocoWebTest.Database.DatabaseWithProfiling.PetaPocoSqlInfo)Session[PetaPocoWebTest.Database.DatabaseWithProfiling.PetaKey]);
+			if( Request.IsLocal)
+			{
+				MiniProfiler.Start();
+			} 
+		}
+
+		protected void Application_EndRequest()
+		{
+			MiniProfiler.Stop();
 		}
 
 		protected void Application_Start()
 		{
 			AreaRegistration.RegisterAllAreas();
 
-			RegisterGlobalFilters(GlobalFilters.Filters);
-			RegisterRoutes(RouteTable.Routes);
+			RegisterGlobalFilters( GlobalFilters.Filters);
+			RegisterRoutes( RouteTable.Routes);
 		}
 	}
 }
