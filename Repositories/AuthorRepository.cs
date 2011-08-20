@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using PetaPocoWebTest.Poco;
+using PetaPoco;
 
 namespace PetaPocoWebTest.Repositories
 {
@@ -14,15 +15,13 @@ namespace PetaPocoWebTest.Repositories
 
 		public Author RetrieveById( int authorId)
 		{
-			return _database.Fetch<Author, Article, Author>(
-				new AuthorArticleRelator().MapArticleToAuthor,
+			return _database.FetchOneToMany<Author, Article>( author => author.Id,
 				"select * from author left join article on article.author_id=author.id where author.id=@0 order by author.name asc", authorId).Single();
 		}
 
 		public List<Author> RetrieveAll()
 		{
-			return _database.Fetch<Author, Article, Author>(
-				new AuthorArticleRelator().MapArticleToAuthor,
+			return _database.FetchOneToMany<Author, Article>( author => author.Id,
 				"select * from author left join article on article.author_id=author.id order by author.name asc").ToList();
 		}
 

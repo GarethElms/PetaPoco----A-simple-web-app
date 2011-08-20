@@ -78,6 +78,7 @@
     <Compile Include="Database\DatabaseExtensions.cs" />
     <Compile Include="Database\DatabaseWithProfiling.cs" />
     <Compile Include="Database\PetaPocoGlimpsePlugin.cs" />
+    <Compile Include="Database\PetaPocoRelationExtensions.cs" />
     <Compile Include="Models\Article.cs" />
     <Compile Include="Models\Author.cs" />
     <Compile Include="Repositories\ArticleRepository.cs" />
@@ -88,7 +89,6 @@
     </Compile>
     <Compile Include="Database\PetaPoco.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repositories\AuthorArticleRelator.cs" />
     <Compile Include="Repositories\AuthorRepository.cs" />
     <Compile Include="Repositories\BaseRepository.cs" />
     <Compile Include="ViewModels\ArticleEditViewModel.cs" />
