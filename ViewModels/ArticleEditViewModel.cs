@@ -10,5 +10,6 @@ namespace PetaPocoWebTest.ViewModels
 	{
 		public Article Article {get; set;}
 		public List<Author> Authors {get; set;}
+		public List<Tag> Tags {get; set;}
 	}
 }

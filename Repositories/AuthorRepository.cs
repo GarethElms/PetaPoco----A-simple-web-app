@@ -15,13 +15,13 @@ namespace PetaPocoWebTest.Repositories
 
 		public Author RetrieveById( int authorId)
 		{
-			return _database.FetchOneToMany<Author, Article>( author => author.Id,
+			return _database.FetchOneToMany<Author, Article>( author => author.Id, article => article.Id != int.MinValue,
 				"select * from author left join article on article.author_id=author.id where author.id=@0 order by author.name asc", authorId).Single();
 		}
 
 		public List<Author> RetrieveAll()
 		{
-			return _database.FetchOneToMany<Author, Article>( author => author.Id,
+			return _database.FetchOneToMany<Author, Article>( author => author.Id, article => article.Id != int.MinValue,
 				"select * from author left join article on article.author_id=author.id order by author.name asc").ToList();
 		}
 
@@ -29,6 +29,7 @@ namespace PetaPocoWebTest.Repositories
 		{
 			using( var scope = _database.GetTransaction())
 			{
+				_database.Execute( "delete from articleTag where articleTag.articleId in (select id from article where article.author_id=@0)", authorId);
 				_database.Execute( "delete from article where author_id=@0", authorId);
 				_database.Execute( "delete from author where id=@0", authorId);
 

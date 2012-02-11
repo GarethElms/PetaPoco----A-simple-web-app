@@ -10,6 +10,7 @@
     <script type="text/javascript"">
     $(document).ready(function () {
     @RenderSection( name:"onReadyJavascript", required:false)
+    $("form :input:visible:first").focus();
     });
     </script>
 </head>
@@ -19,7 +20,7 @@
 
         <div id="header">
             
-            <h1>PetaPoco - A basic web app</h1>
+            <h1 style="text-align:right; position:relative; right:5px;">PetaPoco - A basic web app</h1>
 
             <div id="menucontainer">
                 @{Html.RenderPartial( "WebsitePrimaryTabs");}

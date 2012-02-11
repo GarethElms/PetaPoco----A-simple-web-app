@@ -1,0 +1,28 @@
+﻿@model PetaPocoWebTest.Poco.Tag
+
+@{
+    ViewBag.Title = "Delete";
+}
+
+<h2>Delete tag : @Model.TagName</h2>
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Back to list of tags", "Index")
+</p>
+<h3>Are you sure you want to delete this tag?</h3>
+<fieldset>
+    <legend>Tag</legend>
+    
+    <div class="display-label">Tag</div>
+    <div class="display-field">@Model.TagName</div>
+</fieldset>
+
+@{Html.RenderPartial( "ListArticlesByTag", Model.Articles, new ViewDataDictionary() { {"TagName", Model.TagName}});}
+
+@using (Html.BeginForm()) {
+    <input type="hidden" name="tagId" value="@Model.Id" />
+    <p>
+        <input type="submit" value="Delete" />
+    </p>
+}
+
+

@@ -13,6 +13,7 @@ namespace PetaPocoWebTest.Controllers
 		protected DatabaseWithMVCMiniProfilerAndGlimpse _database;
 		protected ArticleRepository _articles;
 		protected AuthorRepository _authors;
+		protected TagRepository _tags;
 
 		protected override RedirectToRouteResult RedirectToAction(string actionName, string controllerName, System.Web.Routing.RouteValueDictionary routeValues)
 		{
@@ -27,7 +28,8 @@ namespace PetaPocoWebTest.Controllers
 			_database = new DatabaseWithMVCMiniProfilerAndGlimpse( "PetaPocoWebTest");
 			_database.EnsureDatabase();
 
-			_articles = new ArticleRepository( _database);
+			_tags = new TagRepository( _database);
+			_articles = new ArticleRepository( _tags, _database);
 			_authors = new AuthorRepository( _database);
 
 			HttpContext.Items[DatabaseWithGlimpseProfiling.PetaKey] = TempData[DatabaseWithGlimpseProfiling.PetaKey];

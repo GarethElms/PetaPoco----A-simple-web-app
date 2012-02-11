@@ -1,0 +1,21 @@
+﻿@model PetaPocoWebTest.Poco.Tag
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<h2>Tag : @Model.TagName</h2>
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Edit", "Edit", new { tagName=Model.TagName }) - @Html.ActionLink("Back to list of tags", "Index")
+</p>
+<fieldset>
+    <legend>Tag</legend>
+
+    <div class="display-label">Tag name</div>
+    <div class="display-field">@Model.TagName</div>
+</fieldset>
+
+@{Html.RenderPartial( "ListArticlesByTag", Model.Articles, new ViewDataDictionary() { {"TagName", Model.TagName}});}
+
+    
+

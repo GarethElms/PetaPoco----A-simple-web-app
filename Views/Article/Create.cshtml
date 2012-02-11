@@ -57,6 +57,9 @@ $("#Article_Date").datepicker(
             @Html.ValidationMessageFor(model => model.Article.AuthorId)
         </div>
 
+        @{Html.RenderPartial( "TagsControl", Model.Article.Tags, new ViewDataDictionary() {{"AllTags", Model.Tags}});}
+        @Html.ValidationMessageFor(model => model.Article.AuthorId)
+
         <p>
             <input type="submit" value="Create" />
         </p>

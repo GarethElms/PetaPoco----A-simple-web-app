@@ -4,7 +4,7 @@
     ViewBag.Title = "Details";
 }
 
-<h2>Article details</h2>
+<h2>Article : @Model.Title</h2>
 <p>
     @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Edit", "Edit", new { articleId=Model.Id }) - @Html.ActionLink("Back to list of articles", "Index")
 </p>
@@ -22,6 +22,12 @@
 
     <div class="display-label">Author</div>
     <div class="display-field">
-    @Html.ActionLink( Model.Author.Name, "Details", "Author", new {authorId=Model.Author.Id}, null)</div>
+    @Html.ActionLink( Model.Author.Name, "Details", "Author", new {authorId=Model.Author.Id}, null)
+    </div>
+
+    <div class="display-label">Tags</div>
+    <div class="display-field">
+    @foreach( var tag in Model.Tags){ <text><a href="@Url.Action( "Details", "Tag", new {tagName=tag.TagName})">@tag.TagName</a></text>}
+    </div>
 </fieldset>
 

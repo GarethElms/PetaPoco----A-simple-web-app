@@ -10,35 +10,70 @@ namespace PetaPocoWebTest.Repositories
 {
 	public class ArticleRepository : BaseRepository
 	{
-		public ArticleRepository( PetaPoco.Database database) : base( database)
+		private TagRepository _tagRepository {get; set;}
+		public ArticleRepository( TagRepository tagRepository, PetaPoco.Database database) : base( database)
 		{
+			_tagRepository = tagRepository;
 		}
 
 		public Article RetrieveById( int articleId)
 		{
-			return _database.Query<Article, Author>( "select * from article join author on author.id = article.author_id where article.id=@0 order by article.date desc", articleId).Single<Article>();
+			return _database.Fetch<Article, Author, Tag, Article>(
+				new ArticleRelator().Map,
+				"select * from article " + 
+				"join author on author.id = article.author_id " +
+				"left outer join articleTag on articleTag.articleId = article.id " + 
+				"left outer join tag on tag.id=articleTag.tagId " + 
+				"where article.id=@0 " + 
+				"order by article.title asc", articleId).Single();
 		}
 
 		public List<Article> RetrieveAll()
 		{
-			return _database.Fetch<Article, Author>( "select * from article join author on author.id = article.author_id").ToList();
+			return _database.Fetch<Article, Author, Tag, Article>(
+				new ArticleRelator().Map,
+				"select * from article " + 
+				"join author on author.id = article.author_id " +
+				"left outer join articleTag on articleTag.articleId = article.id " + 
+				"left outer join tag on tag.id=articleTag.tagId " + 
+				"order by article.title asc").ToList();
 		}
 
 		public List<Article> RetrieveAllByAuthor( int authorId)
 		{
-			return _database.Fetch<Article>( "select * from article where author_id=@0", authorId).ToList();
+			return _database.Fetch<Article, Author, Tag, Article>(
+				new ArticleRelator().Map,
+				"select * from article " + 
+				"join author on author.id = article.author_id " +
+				"left outer join articleTag on articleTag.articleId = article.id " + 
+				"left outer join tag on tag.id=articleTag.tagId " + 
+				"where article.authorId=@0" + 
+				"order by article.title asc", authorId).ToList();
 		}
 
 		public bool Delete( int articleId)
 		{
-			_database.Delete( "article", "id", null, articleId);
+			using( var scope = _database.GetTransaction())
+			{
+				_database.Execute( "delete from articleTag where articleTag.articleId=@0", articleId);
+				_database.Delete( "article", "id", null, articleId);
+				
+				scope.Complete();
+			}
 
 			return true;
 		}
 
 		public bool Update( Article article)
 		{
-			_database.Update( article);
+			using( var scope = _database.GetTransaction())
+			{
+				_database.Update( article);
+				_database.Execute( "delete from articleTag where articleTag.articleId=@0", article.Id);
+				PersistTags( article);
+
+				scope.Complete();
+			}
 
 			return true;
 		}
@@ -47,9 +82,41 @@ namespace PetaPocoWebTest.Repositories
 		{
 			if( article.AuthorId == null) throw new Exception( "An article must have an author. Have you created any authors yet?");
 
-			_database.Insert( "article", "id", true, article);
+			using( var scope = _database.GetTransaction())
+			{
+				_database.Insert( "article", "id", true, article);
+				PersistTags( article);
+
+				scope.Complete();
+			}
 
 			return true;
+		}
+
+		private void PersistTags( Article article)
+		{
+			if( article.Tags != null && article.Tags.Count > 0)
+			{
+				foreach( var tag in article.Tags.GroupBy( t => t.TagName).Select( tagsWithSameName => tagsWithSameName.First()))
+				{
+					if( ! string.IsNullOrEmpty( tag.TagName))
+					{
+						var existingTag = _tagRepository.RetrieveByTag( tag.TagName);
+						var tagId = 0;
+						if( existingTag == null)
+						{
+							var newTagId = _database.Insert( "tag", "id", true, tag);
+							tagId = tag.Id;
+						}
+						else
+						{
+							tagId = existingTag.Id;
+						}
+
+						_database.Execute( "insert into articleTag values(@0, @1)", article.Id, tagId);
+					}
+				}
+			}
 		}
 	}
 }

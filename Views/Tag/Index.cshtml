@@ -1,0 +1,48 @@
+﻿@model List<PetaPocoWebTest.Poco.Tag>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Tags</h2>
+
+<p>
+    @Html.ActionLink("Home", "Index", "Home") - @Html.ActionLink("Create new tag", "Create")
+</p>
+
+@if( Model.Count == 0){
+
+    <p>There are no tags yet</p>
+
+}else{
+
+    <table>
+        <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Id</th>
+            <th>Article count</th>
+        </tr>
+
+        @foreach (var tag in Model) {
+        <tr>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new {tagName=tag.TagName}) |
+                @Html.ActionLink("Details", "Details", new {tagName=tag.TagName}) |
+                @Html.ActionLink("Delete", "Delete", new {tagName=tag.TagName})
+            </td>
+            <td>
+                @tag.TagName
+            </td>
+            <td>
+                @tag.Id
+            </td>
+            <td style="text-align:right;">
+                @tag.Articles.Count()
+            </td>
+        </tr>
+        }
+
+    </table>
+}
+

@@ -1,0 +1,38 @@
+﻿@model List<PetaPocoWebTest.Poco.Tag>
+@{
+    ViewBag.Title = "ExistingTags";
+}
+
+<div class="editor-label">
+    <label for="Tags">Tags <em style="font-size:80%;">(separate each tag with a new line)</em></label>
+</div>
+<div class="editor-field">
+    <textarea name="Tags" id="Tags" style="height:120px;">@string.Join( "\r\n", Model)</textarea>
+
+    @{
+    var allTags = (List<PetaPocoWebTest.Poco.Tag>)ViewData["AllTags"];
+    
+    if( allTags != null && allTags.Count > 0)
+    {
+        <select id="alltags" style="vertical-align:top;">
+            <option>Existing tags...</option>
+            @foreach( var tag in allTags){
+            <option>@tag.TagName</option>
+            }
+        </select>
+     }
+     }
+</div>
+
+<script type="text/javascript">
+$("#alltags").change(
+    function( event)
+    {
+        var prefix = "";
+        if( $("#Tags").val() != "")
+        {
+            prefix = "\r\n";
+        }
+        $("#Tags").val( $("#Tags").val() + prefix + $(this).val());
+    });
+</script>

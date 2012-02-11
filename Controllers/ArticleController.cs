@@ -6,6 +6,7 @@ using System.Web.Mvc;
 using PetaPocoWebTest.Poco;
 using PetaPocoWebTest.ViewModels;
 using PetaPocoWebTest.Database;
+using System.Text.RegularExpressions;
 
 namespace PetaPocoWebTest.Controllers
 {
@@ -46,6 +47,7 @@ namespace PetaPocoWebTest.Controllers
 			{
 				Article = new Article(),
 				Authors = _authors.RetrieveAll(),
+				Tags = _tags.RetrieveAll()
 			};
 
             return View( viewModel);
@@ -58,7 +60,7 @@ namespace PetaPocoWebTest.Controllers
         {
             try
             {
-                _articles.Insert( article);
+                _articles.Insert( ParseTags( article));
                 return RedirectToAction("Index");
             }
             catch( Exception exception)
@@ -68,6 +70,7 @@ namespace PetaPocoWebTest.Controllers
 				{
 					Article = article,
 					Authors = _authors.RetrieveAll(),
+					Tags = _tags.RetrieveAll()
 				};
 
                 return View( viewModel);
@@ -82,6 +85,7 @@ namespace PetaPocoWebTest.Controllers
 			{
 				Article = _articles.RetrieveById( articleId),
 				Authors = _authors.RetrieveAll(),
+				Tags = _tags.RetrieveAll()
 			};
 
             return View( viewModel);
@@ -94,7 +98,7 @@ namespace PetaPocoWebTest.Controllers
         {
             try
             {
-                _articles.Update( article);
+                _articles.Update( ParseTags( article));
                 return RedirectToAction("Index");
             }
             catch( Exception exception)
@@ -104,11 +108,30 @@ namespace PetaPocoWebTest.Controllers
 				{
 					Article = article,
 					Authors = _authors.RetrieveAll(),
+					Tags = _tags.RetrieveAll()
 				};
 
                 return View( viewModel);
             }
         }
+
+		private Article ParseTags( Article article)
+		{
+			var editedTags = Request["Tags"];
+			if( ! string.IsNullOrEmpty( editedTags))
+			{
+				var tags = Regex.Split( editedTags, "\r\n");
+				if( tags != null && tags.Length > 0)
+				{
+					foreach( var tag in tags)
+					{
+						article.Tags.Add( new Tag( tag));
+					}
+				}
+			}
+
+			return article;
+		}
 
         //
         // GET: /Article/Delete/5

@@ -24,6 +24,7 @@
                 <th>Author</th>
                 <th>Date</th>
                 <th>Id</th>
+                <th>Tags</th>
             </tr>
         </thead>
 
@@ -46,6 +47,9 @@
                 </td>
                 <td>
                     @article.Id
+                </td>
+                <td>
+                    @foreach( var tag in article.Tags){ <text><a href="@Url.Action( "Details", "Tag", new {tagName=tag.TagName})">@tag.TagName</a></text>}
                 </td>
             </tr>
             }

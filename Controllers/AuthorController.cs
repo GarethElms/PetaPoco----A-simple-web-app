@@ -51,7 +51,7 @@ namespace PetaPocoWebTest.Controllers
             catch( Exception exception)
             {
 				ViewBag.ErrorMessage = exception.Message;
-                return View();
+                return View( author);
             }
         }
         
@@ -102,7 +102,7 @@ namespace PetaPocoWebTest.Controllers
             catch( Exception exception)
             {
 				ViewBag.ErrorMessage = exception.Message;
-                return View();
+                return View( _authors.RetrieveById( authorId));
             }
         }
     }

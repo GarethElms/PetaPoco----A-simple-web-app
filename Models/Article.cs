@@ -24,10 +24,14 @@ namespace PetaPocoWebTest.Poco
 		[DisplayName( "Author")]
 		public int? AuthorId {get; set;}
 
+		[ResultColumn]
+		public List<Tag> Tags {get; set;}
+
 		public Article()
 		{
 			Date = DateTime.Now;
 			Id = int.MinValue;
+			Tags = new List<Tag>();
 		}
 	}
 }
