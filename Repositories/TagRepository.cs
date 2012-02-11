@@ -16,32 +16,34 @@ namespace PetaPocoWebTest.Repositories
 
 		public Tag RetrieveById( int tagId)
 		{
-			return _database.Fetch<Tag, Article, Tag>(
+			return _database.Fetch<Tag, Article, Author, Tag>(
 				new TagRelator().Map,
 				"select * from tag " +
 				"left outer join articleTag on articleTag.tagId = tag.id " +
 				"left outer join article on article.id = articleTag.articleId " +
+				"join author on author.id = article.author_id " +
 				"where tag.id=@0 order by tag.tagName asc", tagId).SingleOrDefault<Tag>();
 		}
 
 		public Tag RetrieveByTag( string tagName)
 		{
-			return _database.Fetch<Tag, Article, Tag>(
+			return _database.Fetch<Tag, Article, Author, Tag>(
 				new TagRelator().Map,
 				"select * from tag " +
 				"left outer join articleTag on articleTag.tagId = tag.id " +
 				"left outer join article on article.id = articleTag.articleId " +
+				"join author on author.id = article.author_id " +
 				"where tag.tagName=@0 order by tag.tagName asc", tagName).SingleOrDefault<Tag>();
 		}
 
 		public List<Tag> RetrieveAll()
 		{
-			return _database.FetchOneToMany<Tag, Article>(
-				tag => tag.Id,
-				article => article.Id != int.MinValue,
+			return _database.Fetch<Tag, Article, Author, Tag>(
+				new TagRelator().Map,
 				"select * from tag " +
 				"left outer join articleTag on articleTag.tagId = tag.id " +
-				"left outer join article on article.id = articleTag.articleId ").ToList();
+				"left outer join article on article.id = articleTag.articleId " +
+				"join author on author.id = article.author_id order by tag.tagName asc").ToList();
 		}
 
 		public List<Tag> RetrieveAllForArticle( int articleId)

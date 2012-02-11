@@ -18,15 +18,15 @@ namespace PetaPocoWebTest.Repositories
 			if( article == null)
 				return current;
 
-			// Is this the same author as the current one we're processing
+			// Is this the same article as the current one we're processing
 			if( current != null && current.Id == article.Id)
 			{
 				if( current.Author == null) current.Author = author;
 
-				// Yes, just add this post to the current author's collection of posts
+				// Yes, just add this tag to the current article's collection of tags
 				current.Tags.Add( tag);
 
-				// Return null to indicate we're not done with this author yet
+				// Return null to indicate we're not done with this article yet
 				return null;
 			}
 

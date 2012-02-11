@@ -5,7 +5,11 @@
     @if( Model.Count > 0){
     <ul>
     @foreach( var article in Model) {
-        <li>@Html.ActionLink( article.Title, "Details", "Article", new {articleId=article.Id}, null)</li>
+        <li>
+            @Html.ActionLink( article.Title, "Details", "Article", new {articleId=article.Id}, null)
+            by
+            @Html.ActionLink( article.Author.Name, "Details", "Author", new {authorId=article.Author.Id}, null)
+        </li>
     }
     </ul>
     } else {
